@@ -16,94 +16,81 @@ spotify_redirect_uri = System.fetch_env!("LB_SPOTIFY_REDIRECT_URI")
 :ok
 ```
 
-## Getting Authorization Code
-
-Going to use Authorization Flow to get `code`
-
-```elixir
-response =
-  Req.get!(
-    "https://accounts.spotify.com/authorize",
-    params: [
-      response_type: "code",
-      client_id: spotify_client_id,
-      redirect_uri: spotify_redirect_uri,
-      scope: URI.encode("user-top-read user-read-currently-playing")
-    ],
-    follow_redirects: false
-  )
-
-if response.status != 303,
-  do: raise("Got response status: #{response.status}")
-
-response_headers = response.headers
-
-{"location", redirect_uri} =
-  Enum.find(response_headers, fn {key, _value} -> key == "location" end)
-
-click_html = """
-<html>
-<body>
-  <a style="color: black;" target="_blank" href="#{redirect_uri}">Go to consent page</a>
-</body>
-"""
-
-Kino.HTML.new(click_html)
-```
-
-## Code input
-
-After granting the consent, you will be redirected to `redirect_uri` with `?code=code`. Set the code below.
-
-```elixir
-code_input = Kino.Input.text("Code")
-code = Kino.Input.read(code_input)
-code_input
-```
-
-## Getting auth token and refresh token
-
-<!-- livebook:{"reevaluate_automatically":true} -->
-
-```elixir
-response =
-  Req.post!(
-    "https://accounts.spotify.com/api/token",
-    headers: [
-      {"Content-Type", "application/x-www-form-urlencoded"},
-      {"Authorization", "Basic #{Base.encode64("#{spotify_client_id}:#{spotify_client_secret}")}"}
-    ],
-    body:
-      URI.encode_query(
-        grant_type: "authorization_code",
-        code: code,
-        redirect_uri: spotify_redirect_uri
-      )
-  )
-
-if response.status != 200 do
-  IO.puts(response.status)
-  IO.puts(inspect(response.body))
-  raise("Request failed")
-end
-
-token_data = response.body
-
-:ok
-```
-
-<!-- livebook:{"reevaluate_automatically":true} -->
-
-```elixir
-token_data_holder = token_data
-```
-
 ## Spotify module
+
+```elixir
+defmodule SpotifyAPI do
+  @scopes ["user-top-read", "user-read-currently-playing"]
+
+  def get_authorization_code(client_id, redirect_uri) do
+    Req.get!(
+      "https://accounts.spotify.com/authorize",
+      params: [
+        response_type: "code",
+        client_id: client_id,
+        redirect_uri: redirect_uri,
+        scope: URI.encode(Enum.join(@scopes, " "))
+      ],
+      follow_redirects: false
+    )
+  end
+
+  def get_access_token(code, client_id, client_secret, redirect_uri) do
+    encoded_token = Base.encode64("#{client_id}:#{client_secret}")
+
+    Req.post!(
+      "https://accounts.spotify.com/api/token",
+      headers: [
+        {"Content-Type", "application/x-www-form-urlencoded"},
+        {"Authorization", "Basic #{encoded_token}"}
+      ],
+      body:
+        URI.encode_query(
+          grant_type: "authorization_code",
+          code: code,
+          redirect_uri: redirect_uri
+        )
+    )
+  end
+
+  def refresh_access_token(client_id, client_secret, refresh_token) do
+    encoded_token = Base.encode64("#{client_id}:#{client_secret}")
+
+    Req.post!("https://accounts.spotify.com/api/token",
+      body: URI.encode_query(grant_type: "refresh_token", refresh_token: refresh_token),
+      headers: [
+        {"Content-Type", "application/x-www-form-urlencoded"},
+        {"Authorization", "Basic #{encoded_token}"}
+      ]
+    )
+  end
+
+  def now_playing(access_token) do
+    Req.get!(
+      "https://api.spotify.com/v1/me/player/currently-playing",
+      headers: [{"Authorization", "Bearer #{access_token}"}]
+    )
+  end
+
+  def top_tracks(access_token) do
+    Req.get!(
+      "https://api.spotify.com/v1/me/top/tracks",
+      params: [limit: 10, offset: 0],
+      headers: [{"Authorization", "Bearer #{access_token}"}]
+    )
+  end
+end
+```
 
 ```elixir
 defmodule Spotify do
   def process_currently_playing(track) do
-    track
+    %{
+      name: track["name"],
+      album_image_url: get_image_url(track),
+      album_name: track["album"]["name"],
+      artists: get_artists_name(track)
+    }
   end
 
   def process_top_tracks(tracks) do
@@ -130,14 +117,74 @@ defmodule Spotify do
 end
 ```
 
-## Now playing
+## Getting Authorization Code
+
+Going to use Authorization Flow to get `code`
+
+```elixir
+response = SpotifyAPI.get_authorization_code(spotify_client_id, spotify_redirect_uri)
+
+if response.status != 303,
+  do: raise("Got response status: #{response.status}")
+
+response_headers = response.headers
+
+{"location", redirect_uri} =
+  Enum.find(response_headers, fn {key, _value} -> key == "location" end)
+
+click_html = """
+<html>
+<body>
+  <a style="color: black;" target="_blank" href="#{redirect_uri}">Go to consent page</a>
+</body>
+"""
+
+Kino.HTML.new(click_html)
+```
+
+## Code input
+
+After granting the consent, you will be redirected to `redirect_uri` with `?code=code`. Set the code below.
+
+```elixir
+code_input = Kino.Input.text("Code")
+```
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+code = Kino.Input.read(code_input)
+:ok
+```
+
+## Getting auth token and refresh token
+
+<!-- livebook:{"reevaluate_automatically":true} -->
 
 ```elixir
 response =
-  Req.get!(
-    "https://api.spotify.com/v1/me/player/currently-playing",
-    headers: [{"Authorization", "Bearer #{token_data_holder["access_token"]}"}]
+  SpotifyAPI.get_access_token(
+    code,
+    spotify_client_id,
+    spotify_client_secret,
+    spotify_redirect_uri
   )
+
+if response.status != 200 do
+  IO.puts(response.status)
+  IO.puts(inspect(response.body))
+  raise("Request failed")
+end
+
+token_data = response.body
+
+:ok
+```
+
+## Now playing
+
+```elixir
+response = SpotifyAPI.now_playing(token_data["access_token"])
 
 now_playing =
   case response.status do
@@ -146,6 +193,9 @@ now_playing =
 
     204 ->
       {:not_playing, "Nothing playing at the moment"}
+
+    401 ->
+      {:access_token_expired}
 
     _ ->
       IO.puts(response.status)
@@ -159,26 +209,32 @@ now_playing =
 
 ```elixir
 case now_playing do
-  {:now_playing, now_playing_response} -> Spotify.process_currently_playing(now_playing_response)
-  {:no_playing, message} -> message
-  {:error, error_response} -> error_response
+  {:now_playing, now_playing_response} ->
+    Spotify.process_currently_playing(now_playing_response["item"])
+
+  {:not_playing, message} ->
+    message
+
+  {:access_token_expired} ->
+    IO.puts("Access token expired")
+
+  {:error, error_response} ->
+    error_response
 end
 ```
 
 ## Top songs
 
 ```elixir
-response =
-  Req.get!(
-    "https://api.spotify.com/v1/me/top/tracks",
-    params: [limit: 10, offset: 0],
-    headers: [{"Authorization", "Bearer #{token_data_holder["access_token"]}"}]
-  )
+response = SpotifyAPI.top_tracks(token_data["access_token"])
 
 top_tracks_response =
   case response.status do
     200 ->
       {:ok, response.body}
+
+    401 ->
+      {:access_token_expired}
 
     _ ->
       IO.puts(response.status)
@@ -195,6 +251,7 @@ top_tracks_response =
 ```elixir
 case top_tracks_response do
   {:ok, tracks} -> Spotify.process_top_tracks(tracks["items"])
+  {:access_token_expired} -> IO.puts("Access token expired")
   {:error, error_response} -> error_response
 end
 ```
@@ -202,5 +259,10 @@ end
 ## Refresh access token
 
 ```elixir
-# TODO
+refresh_token_response =
+  SpotifyAPI.refresh_access_token(
+    spotify_client_id,
+    spotify_client_secret,
+    token_data["refresh_token"]
+  )
 ```
