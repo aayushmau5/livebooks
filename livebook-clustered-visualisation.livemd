@@ -37,17 +37,11 @@ true
 Node.list(:hidden)
 ```
 
-<!-- livebook:{"output":true} -->
-
-```
-[:"livebook_app@Aayushs-MacBook-Air", :"phoenix-aayushsahu-com@fdaa:0:71d1:a7b:5adc:8b2c:129b:2"]
-```
-
 <!-- livebook:{"attrs":"eyJhc3NpZ25fdG8iOiJyZXN1bHQiLCJjb2RlIjoiQWNjdW11bGF0b3IuU3RhdHMuZ2V0X2FsbF9ibG9nc19kYXRhKCkiLCJjb29raWUiOiIiLCJjb29raWVfc2VjcmV0IjoiQ09PS0lFIiwibm9kZSI6InBob2VuaXgtYWF5dXNoc2FodS1jb21AZmRhYTowOjcxZDE6YTdiOjVhZGM6OGIyYzoxMjliOjIiLCJub2RlX3NlY3JldCI6IiIsIm5vZGVfc2VjcmV0X3ZhbHVlIjpudWxsLCJ1c2VfY29va2llX3NlY3JldCI6dHJ1ZSwidXNlX25vZGVfc2VjcmV0IjpmYWxzZX0","chunks":null,"kind":"Elixir.Kino.RemoteExecutionCell","livebook_object":"smart_cell"} -->
 
 ```elixir
 require Kino.RPC
-node = :"phoenix-aayushsahu-com@fdaa:0:71d1:a7b:5adc:8b2c:129b:2"
+node = :""
 Node.set_cookie(node, String.to_atom(System.fetch_env!("LB_COOKIE")))
 
 result =
