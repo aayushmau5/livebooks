@@ -1,0 +1,173 @@
+# Get Auth0 Users
+
+```elixir
+Mix.install([
+  {:req, "~> 0.4.11"},
+  {:csv, "~> 3.2"}
+])
+```
+
+## Users
+
+```elixir
+table = :ets.new(:cache_storage, [:set, :protected, :named_table])
+```
+
+```elixir
+defmodule Auth0 do
+  def get_access_token(auth0_domain, client_id, client_secret) do
+    Req.post!("#{auth0_domain}/oauth/token",
+      headers: [
+        {:content_type, "application/json"}
+      ],
+      json: %{
+        "client_id" => client_id,
+        "client_secret" => client_secret,
+        "audience" => "#{auth0_domain}/api/v2/",
+        "grant_type" => "client_credentials"
+      }
+    )
+    |> then(& &1.body)
+    |> then(&Map.get(&1, "access_token"))
+  end
+
+  def get_users(auth0_domain, access_token, page \\ 0) do
+    Req.get!("#{auth0_domain}/api/v2/users?page=#{page}&per_page=100",
+      headers: [
+        {:authorization, "Bearer #{access_token}"}
+      ]
+    )
+    |> then(& &1.body)
+  end
+
+  def rec_run_request(req, page, response_handler) do
+    # TODO: find a better place to call this function
+    Process.sleep(2000)
+    response = req.(page)
+    response = if length(response) != 0, do: response, else: []
+    response_handler.(response)
+
+    # rec_run_request(req, page + 1, process_response) # TODO: ending condition
+  end
+
+  def run() do
+    auth0_domain = System.get_env("LB_AUTH0_DOMAIN")
+    client_id = System.get_env("LB_CLIENT_ID")
+    client_secret = System.get_env("LB_CLIENT_SECRET")
+
+    # For testing
+    access_token =
+      case :ets.lookup(:cache_storage, "access_token") do
+        [] ->
+          access_token = Auth0.get_access_token(auth0_domain, client_id, client_secret)
+          :ets.insert(:cache_storage, {"access_token", access_token})
+          access_token
+
+        [{"access_token", access_token}] ->
+          access_token
+      end
+
+    users_fn = fn page ->
+      get_users(auth0_domain, access_token, page)
+    end
+
+    response_handler = fn response ->
+      :ets.insert(:cache_storage, {"data", response})
+
+      response
+      |> Enum.map(&format_data(&1))
+      |> encode_to_csv_string()
+      |> append_to_file()
+    end
+
+    rec_run_request(users_fn, 0, response_handler)
+  end
+
+  defp format_date(datetime_string) do
+    {:ok, datetime, _} = DateTime.from_iso8601(datetime_string)
+    DateTime.to_unix(datetime)
+  end
+
+  defp format_data(data) do
+    # CSV fields (for cognito)
+    # name,given_name,family_name,middle_name,nickname,preferred_username,
+    # profile,picture,website,email,email_verified,gender,birthdate,zoneinfo,
+    # locale,phone_number,phone_number_verified,address,updated_at,cognito:mfa_enabled,
+    # cognito:username
+    email_verified = if Map.get(data, "email_verified"), do: "TRUE", else: "FALSE"
+    updated_at = format_date(Map.get(data, "updated_at"))
+
+    [
+      # name
+      Map.get(data, "name"),
+      # given_name
+      nil,
+      # family_name
+      nil,
+      # middle_name
+      nil,
+      # nickname
+      Map.get(data, "nickname"),
+      # preferred_username
+      nil,
+      # profile
+      nil,
+      # picture
+      Map.get(data, "picture"),
+      # website
+      nil,
+      # email
+      Map.get(data, "email"),
+      # email_verified
+      email_verified,
+      # gender
+      nil,
+      # birthdate
+      nil,
+      # zoneinfo
+      nil,
+      # locale
+      nil,
+      # phone_number
+      nil,
+      # phone_number_verified
+      nil,
+      # address
+      nil,
+      # updated_at
+      updated_at,
+      # cognito:mfa_enabled
+      "FALSE",
+      # cognito:username
+      Map.get(data, "email")
+    ]
+  end
+
+  defp encode_to_csv_string(data) do
+    data
+    |> CSV.encode()
+    |> Enum.to_list()
+    |> Enum.join()
+  end
+
+  defp append_to_file(csv_string) do
+    File.write!("./migration-data.csv", csv_string, [:append])
+  end
+end
+```
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+Auth0.run()
+```
+
+```elixir
+data =
+  case :ets.lookup(:cache_storage, "data") do
+    [] -> nil
+    [{"data", []}] -> nil
+    [{"data", data}] -> Enum.take(data, 2)
+  end
+```
+

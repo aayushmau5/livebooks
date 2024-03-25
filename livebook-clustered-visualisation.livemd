@@ -1,0 +1,727 @@
+<!-- livebook:{"persist_outputs":true} -->
+
+# Visualisation Notebook with clustering and fly.io
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.12.0"},
+  {:kino_vega_lite, "~> 0.1.10"}
+])
+```
+
+## Setup
+
+Livebook connected to a remote node hosted at fly.io
+
+Checkout the [link](https://fly.io/docs/elixir/advanced-guides/connect-livebook-to-your-app/) for more.
+
+This notebook will show visualisation through live data.
+
+## Code
+
+```elixir
+remote_node = String.to_atom(System.get_env("LB_REMOTE_NODE"))
+cookie = String.to_atom(System.get_env("LB_COOKIE"))
+
+Node.set_cookie(node(), cookie)
+Node.connect(remote_node)
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+true
+```
+
+```elixir
+Node.list(:hidden)
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+[:"livebook_app@Aayushs-MacBook-Air", :"phoenix-aayushsahu-com@fdaa:0:71d1:a7b:5adc:8b2c:129b:2"]
+```
+
+<!-- livebook:{"attrs":"eyJhc3NpZ25fdG8iOiJyZXN1bHQiLCJjb2RlIjoiQWNjdW11bGF0b3IuU3RhdHMuZ2V0X2FsbF9ibG9nc19kYXRhKCkiLCJjb29raWUiOiIiLCJjb29raWVfc2VjcmV0IjoiQ09PS0lFIiwibm9kZSI6InBob2VuaXgtYWF5dXNoc2FodS1jb21AZmRhYTowOjcxZDE6YTdiOjVhZGM6OGIyYzoxMjliOjIiLCJub2RlX3NlY3JldCI6IiIsIm5vZGVfc2VjcmV0X3ZhbHVlIjpudWxsLCJ1c2VfY29va2llX3NlY3JldCI6dHJ1ZSwidXNlX25vZGVfc2VjcmV0IjpmYWxzZX0","chunks":null,"kind":"Elixir.Kino.RemoteExecutionCell","livebook_object":"smart_cell"} -->
+
+```elixir
+require Kino.RPC
+node = :"phoenix-aayushsahu-com@fdaa:0:71d1:a7b:5adc:8b2c:129b:2"
+Node.set_cookie(node, String.to_atom(System.fetch_env!("LB_COOKIE")))
+
+result =
+  Kino.RPC.eval_string(node, ~S"Accumulator.Stats.get_all_blogs_data()", file: __ENV__.file)
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+[
+  %{
+    id: 19,
+    __struct__: Accumulator.Stats.Stat,
+    __meta__: %{
+      state: :loaded,
+      context: nil,
+      prefix: nil,
+      source: "stats",
+      __struct__: Ecto.Schema.Metadata,
+      schema: Accumulator.Stats.Stat
+    },
+    inserted_at: ~N[2023-07-28 14:20:37],
+    updated_at: ~N[2023-12-06 19:53:23],
+    views: 16,
+    likes: 0,
+    slug: "blog:things-i-want-to-explore"
+  },
+  %{
+    id: 5,
+    __struct__: Accumulator.Stats.Stat,
+    __meta__: %{
+      state: :loaded,
+      context: nil,
+      prefix: nil,
+      source: "stats",
+      __struct__: Ecto.Schema.Metadata,
+      schema: Accumulator.Stats.Stat
+    },
+    inserted_at: ~N[2023-07-28 14:20:37],
+    updated_at: ~N[2023-12-28 20:42:30],
+    views: 25,
+    likes: 1,
+    slug: "blog:elixir-s3-list"
+  },
+  %{
+    id: 4,
+    __struct__: Accumulator.Stats.Stat,
+    __meta__: %{
+      state: :loaded,
+      context: nil,
+      prefix: nil,
+      source: "stats",
+      __struct__: Ecto.Schema.Metadata,
+      schema: Accumulator.Stats.Stat
+    },
+    inserted_at: ~N[2023-07-28 14:20:37],
+    updated_at: ~N[2024-01-05 06:43:18],
+    views: 106,
+    likes: 3,
+    slug: "blog:flyio-phoenix-redis-connection"
+  },
+  %{
+    id: 31,
+    __struct__: Accumulator.Stats.Stat,
+    __meta__: %{
+      state: :loaded,
+      context: nil,
+      prefix: nil,
+      source: "stats",
+      __struct__: Ecto.Schema.Metadata,
+      schema: Accumulator.Stats.Stat
+    },
+    inserted_at: ~N[2023-07-28 14:20:37],
+    updated_at: ~N[2023-12-06 19:53:39],
+    views: 14,
+    likes: 0,
+    slug: "blog:distro-hop"
+  },
+  %{
+    id: 24,
+    __struct__: Accumulator.Stats.Stat,
+    __meta__: %{
+      state: :loaded,
+      context: nil,
+      prefix: nil,
+      source: "stats",
+      __struct__: Ecto.Schema.Metadata,
+      schema: Accumulator.Stats.Stat
+    },
+    inserted_at: ~N[2023-07-28 14:20:37],
+    updated_at: ~N[2023-11-19 15:54:11],
+    views: 38,
+    likes: 3,
+    slug: "blog:sonicpi-pop-os-installation"
+  },
+  %{
+    id: 18,
+    __struct__: Accumulator.Stats.Stat,
+    __meta__: %{
+      state: :loaded,
+      context: nil,
+      prefix: nil,
+      source: "stats",
+      __struct__: Ecto.Schema.Metadata,
+      schema: Accumulator.Stats.Stat
+    },
+    inserted_at: ~N[2023-07-28 14:20:37],
+    updated_at: ~N[2024-03-01 23:37:43],
+    views: 32,
+    likes: 0,
+    slug: "blog:conditional-back-nextjs"
+  },
+  %{
+    id: 12,
+    __struct__: Accumulator.Stats.Stat,
+    __meta__: %{
+      state: :loaded,
+      context: nil,
+      prefix: nil,
+      source: "stats",
+      __struct__: Ecto.Schema.Metadata,
+      schema: Accumulator.Stats.Stat
+    },
+    inserted_at: ~N[2023-07-28 14:20:37],
+    updated_at: ~N[2024-02-06 04:04:48],
+    views: 21,
+    likes: 0,
+    slug: "blog:prisma-graphql-jest-test"
+  },
+  %{
+    id: 35,
+    __struct__: Accumulator.Stats.Stat,
+    __meta__: %{
+      state: :loaded,
+      context: nil,
+      prefix: nil,
+      source: "stats",
+      __struct__: Ecto.Schema.Metadata,
+      schema: Accumulator.Stats.Stat
+    },
+    inserted_at: ~N[2023-09-20 16:09:24],
+    updated_at: ~N[2024-02-21 04:35:04],
+    views: 39,
+    likes: 2,
+    slug: "blog:gh-action-pr"
+  },
+  %{
+    id: 21,
+    __struct__: Accumulator.Stats.Stat,
+    __meta__: %{
+      state: :loaded,
+      context: nil,
+      prefix: nil,
+      source: "stats",
+      __struct__: Ecto.Schema.Metadata,
+      schema: Accumulator.Stats.Stat
+    },
+    inserted_at: ~N[2023-07-28 14:20:37],
+    updated_at: ~N[2024-01-06 19:37:05],
+    views: 12,
+    likes: 0,
+    slug: "blog:mongosh-docker"
+  },
+  %{
+    id: 20,
+    __struct__: Accumulator.Stats.Stat,
+    __meta__: %{
+      state: :loaded,
+      context: nil,
+      prefix: nil,
+      source: "stats",
+      __struct__: Ecto.Schema.Metadata,
+      schema: Accumulator.Stats.Stat
+    },
+    inserted_at: ~N[2023-07-28 14:20:37],
+    updated_at: ~N[2024-03-20 09:15:11],
+    views: 189,
+    likes: 5,
+    slug: "blog:vscode-tips-tricks"
+  },
+  %{
+    id: 30,
+    __struct__: Accumulator.Stats.Stat,
+    __meta__: %{
+      state: :loaded,
+      context: nil,
+      prefix: nil,
+      source: "stats",
+      __struct__: Ecto.Schema.Metadata,
+      schema: Accumulator.Stats.Stat
+    },
+    inserted_at: ~N[2023-07-28 14:20:37],
+    updated_at: ~N[2024-03-20 10:32:59],
+    views: 15,
+    likes: 0,
+    slug: "blog:flask-response-headers"
+  },
+  %{
+    id: 34,
+    __struct__: Accumulator.Stats.Stat,
+    __meta__: %{
+      state: :loaded,
+      context: nil,
+      prefix: nil,
+      source: "stats",
+      __struct__: Ecto.Schema.Metadata,
+      schema: Accumulator.Stats.Stat
+    },
+    inserted_at: ~N[2023-08-06 11:49:42],
+    updated_at: ~N[2024-03-15 20:54:50],
+    views: 190,
+    likes: 2,
+    slug: "blog:flyio-phoenix-file-serve"
+  },
+  %{
+    id: 13,
+    __struct__: Accumulator.Stats.Stat,
+    __meta__: %{
+      state: :loaded,
+      context: nil,
+      prefix: nil,
+      source: "stats",
+      __struct__: Ecto.Schema.Metadata,
+      schema: Accumulator.Stats.Stat
+    },
+    inserted_at: ~N[2023-07-28 14:20:37],
+    updated_at: ~N[2024-03-23 18:40:17],
+    views: 149,
+    likes: 2,
+    slug: "blog:nextjs-phoenix-channels"
+  },
+  %{
+    id: 25,
+    __struct__: Accumulator.Stats.Stat,
+    __meta__: %{
+      state: :loaded,
+      context: nil,
+      prefix: nil,
+      source: "stats",
+      __struct__: Ecto.Schema.Metadata,
+      schema: Accumulator.Stats.Stat
+    },
+    inserted_at: ~N[2023-07-28 14:20:37],
+    updated_at: ~N[2024-03-16 06:32:16],
+    views: 35,
+    likes: 1,
+    slug: "blog:postgres-docker"
+  },
+  %{
+    id: 3,
+    __struct__: Accumulator.Stats.Stat,
+    __meta__: %{
+      state: :loaded,
+      context: nil,
+      prefix: nil,
+      source: "stats",
+      __struct__: Ecto.Schema.Metadata,
+      schema: Accumulator.Stats.Stat
+    },
+    inserted_at: ~N[2023-07-28 14:20:37],
+    updated_at: ~N[2024-01-05 18:15:37],
+    views: 11,
+    likes: 0,
+    slug: "blog:my-custom-mdx-components"
+  },
+  %{
+    id: 10,
+    __struct__: Accumulator.Stats.Stat,
+    __meta__: %{
+      state: :loaded,
+      context: nil,
+      prefix: nil,
+      source: "stats",
+      __struct__: Ecto.Schema.Metadata,
+      schema: Accumulator.Stats.Stat
+    },
+    inserted_at: ~N[2023-07-28 14:20:37],
+    updated_at: ~N[2024-02-22 17:38:11],
+    views: 15,
+    likes: 1,
+    slug: "blog:hello-world"
+  },
+  %{
+    id: 33,
+    __struct__: Accumulator.Stats.Stat,
+    __meta__: %{
+      state: :loaded,
+      context: nil,
+      prefix: nil,
+      source: "stats",
+      __struct__: Ecto.Schema.Metadata,
+      schema: Accumulator.Stats.Stat
+    },
+    inserted_at: ~N[2023-07-28 14:20:37],
+    updated_at: ~N[2024-02-22 17:39:22],
+    views: 98,
+    likes: 10,
+    slug: "blog:new-tech-2023"
+  },
+  %{
+    id: 17,
+    __struct__: Accumulator.Stats.Stat,
+    __meta__: %{
+      state: :loaded,
+      context: nil,
+      prefix: nil,
+      source: "stats",
+      __struct__: Ecto.Schema.Metadata,
+      schema: Accumulator.Stats.Stat
+    },
+    inserted_at: ~N[2023-07-28 14:20:37],
+    updated_at: ~N[2024-01-28 19:42:19],
+    views: 5,
+    likes: 0,
+    slug: "blog:visitor-pattern"
+  },
+  %{
+    id: 6,
+    __struct__: Accumulator.Stats.Stat,
+    __meta__: %{
+      state: :loaded,
+      context: nil,
+      prefix: nil,
+      source: "stats",
+      __struct__: Ecto.Schema.Metadata,
+      schema: Accumulator.Stats.Stat
+    },
+    inserted_at: ~N[2023-07-28 14:20:37],
+    updated_at: ~N[2023-12-14 15:39:49],
+    views: 11,
+    likes: 0,
+    slug: "blog:elixir-file-handling"
+  },
+  %{
+    id: 32,
+    __struct__: Accumulator.Stats.Stat,
+    __meta__: %{
+      state: :loaded,
+      context: nil,
+      prefix: nil,
+      source: "stats",
+      __struct__: Ecto.Schema.Metadata,
+      schema: Accumulator.Stats.Stat
+    },
+    inserted_at: ~N[2023-07-28 14:20:37],
+    updated_at: ~N[2024-02-22 17:39:53],
+    views: 42,
+    likes: 1,
+    slug: "blog:tech-2022"
+  },
+  %{
+    id: 23,
+    __struct__: Accumulator.Stats.Stat,
+    __meta__: %{
+      state: :loaded,
+      context: nil,
+      prefix: nil,
+      source: "stats",
+      __struct__: Ecto.Schema.Metadata,
+      schema: Accumulator.Stats.Stat
+    },
+    inserted_at: ~N[2023-07-28 14:20:37],
+    updated_at: ~N[2024-03-18 00:40:07],
+    views: 109,
+    likes: 2,
+    slug: "blog:markdown-next-mdx"
+  },
+  %{
+    id: 2,
+    __struct__: Accumulator.Stats.Stat,
+    __meta__: %{
+      state: :loaded,
+      context: nil,
+      prefix: nil,
+      source: "stats",
+      __struct__: Ecto.Schema.Metadata,
+      schema: Accumulator.Stats.Stat
+    },
+    inserted_at: ~N[2023-07-28 14:20:37],
+    updated_at: ~N[2024-03-10 11:00:00],
+    views: 78,
+    likes: 9,
+    slug: "blog:notes"
+  },
+  %{
+    id: 8,
+    __struct__: Accumulator.Stats.Stat,
+    __meta__: %{
+      state: :loaded,
+      context: nil,
+      prefix: nil,
+      source: "stats",
+      __struct__: Ecto.Schema.Metadata,
+      schema: Accumulator.Stats.Stat
+    },
+    inserted_at: ~N[2023-07-28 14:20:37],
+    updated_at: ~N[2024-01-02 21:55:40],
+    views: 13,
+    likes: 0,
+    slug: "blog:the-odin-project"
+  },
+  %{
+    id: 22,
+    __struct__: Accumulator.Stats.Stat,
+    __meta__: %{
+      state: :loaded,
+      context: nil,
+      prefix: nil,
+      source: "stats",
+      __struct__: Ecto.Schema.Metadata,
+      schema: Accumulator.Stats.Stat
+    },
+    inserted_at: ~N[2023-07-28 14:20:37],
+    updated_at: ~N[2024-01-02 22:12:10],
+    views: 2,
+    likes: 0,
+    slug: "blog:gsoc-asyncapi-2"
+  },
+  %{
+    id: 29,
+    __struct__: Accumulator.Stats.Stat,
+    __meta__: %{
+      state: :loaded,
+      context: nil,
+      prefix: nil,
+      source: "stats",
+      __struct__: Ecto.Schema.Metadata,
+      schema: Accumulator.Stats.Stat
+    },
+    inserted_at: ~N[2023-07-28 14:20:37],
+    updated_at: ~N[2024-01-02 22:15:37],
+    views: 15,
+    likes: 2,
+    slug: "blog:gsoc"
+  },
+  %{
+    id: 27,
+    __struct__: Accumulator.Stats.Stat,
+    __meta__: %{
+      state: :loaded,
+      context: nil,
+      prefix: nil,
+      source: "stats",
+      __struct__: Ecto.Schema.Metadata,
+      schema: Accumulator.Stats.Stat
+    },
+    inserted_at: ~N[2023-07-28 14:20:37],
+    updated_at: ~N[2024-03-19 10:12:23],
+    views: 22,
+    likes: 0,
+    slug: "blog:graphql-typescript"
+  },
+  %{
+    id: 26,
+    __struct__: Accumulator.Stats.Stat,
+    __meta__: %{
+      state: :loaded,
+      context: nil,
+      prefix: nil,
+      source: "stats",
+      __struct__: Ecto.Schema.Metadata,
+      schema: Accumulator.Stats.Stat
+    },
+    inserted_at: ~N[2023-07-28 14:20:37],
+    updated_at: ~N[2023-12-14 16:24:40],
+    views: 104,
+    likes: 0,
+    slug: "blog:livebook-secret-config"
+  },
+  %{
+    id: 11,
+    __struct__: Accumulator.Stats.Stat,
+    __meta__: %{
+      state: :loaded,
+      context: nil,
+      prefix: nil,
+      source: "stats",
+      __struct__: Ecto.Schema.Metadata,
+      schema: Accumulator.Stats.Stat
+    },
+    inserted_at: ~N[2023-07-28 14:20:37],
+    updated_at: ~N[2023-12-12 19:26:02],
+    views: 12,
+    likes: 0,
+    slug: "blog:nextjs-dynamic-import"
+  },
+  %{
+    id: 16,
+    __struct__: Accumulator.Stats.Stat,
+    __meta__: %{
+      state: :loaded,
+      context: nil,
+      prefix: nil,
+      source: "stats",
+      __struct__: Ecto.Schema.Metadata,
+      schema: Accumulator.Stats.Stat
+    },
+    inserted_at: ~N[2023-07-28 14:20:37],
+    updated_at: ~N[2024-02-13 14:53:10],
+    views: 46,
+    likes: 5,
+    slug: "blog:auth0-email-template-redirect"
+  },
+  %{
+    id: 9,
+    __struct__: Accumulator.Stats.Stat,
+    __meta__: %{
+      state: :loaded,
+      context: nil,
+      prefix: nil,
+      source: "stats",
+      __struct__: Ecto.Schema.Metadata,
+      schema: Accumulator.Stats.Stat
+    },
+    inserted_at: ~N[2023-07-28 14:20:37],
+    updated_at: ~N[2024-01-16 13:06:39],
+    views: 4,
+    likes: 0,
+    slug: "blog:memoization-use-memo"
+  },
+  %{
+    id: 28,
+    __struct__: Accumulator.Stats.Stat,
+    __meta__: %{
+      state: :loaded,
+      context: nil,
+      prefix: nil,
+      source: "stats",
+      __struct__: Ecto.Schema.Metadata,
+      schema: Accumulator.Stats.Stat
+    },
+    inserted_at: ~N[2023-07-28 14:20:37],
+    updated_at: ~N[2023-10-26 20:49:31],
+    views: 12,
+    likes: 1,
+    slug: "blog:gsoc-at-postman-and-asyncapi"
+  },
+  %{
+    id: 7,
+    __struct__: Accumulator.Stats.Stat,
+    __meta__: %{
+      state: :loaded,
+      context: nil,
+      prefix: nil,
+      source: "stats",
+      __struct__: Ecto.Schema.Metadata,
+      schema: Accumulator.Stats.Stat
+    },
+    inserted_at: ~N[2023-07-28 14:20:37],
+    updated_at: ~N[2024-02-16 08:14:23],
+    views: 13,
+    likes: 0,
+    slug: "blog:gsoc-asyncapi-1"
+  },
+  %{
+    id: 14,
+    __struct__: Accumulator.Stats.Stat,
+    __meta__: %{
+      state: :loaded,
+      context: nil,
+      prefix: nil,
+      source: "stats",
+      __struct__: Ecto.Schema.Metadata,
+      schema: Accumulator.Stats.Stat
+    },
+    inserted_at: ~N[2023-07-28 14:20:37],
+    updated_at: ~N[2024-03-12 02:15:48],
+    views: 276,
+    likes: 0,
+    slug: "blog:typescript-npm-publish"
+  },
+  %{
+    id: 15,
+    __struct__: Accumulator.Stats.Stat,
+    __meta__: %{
+      state: :loaded,
+      context: nil,
+      prefix: nil,
+      source: "stats",
+      __struct__: Ecto.Schema.Metadata,
+      schema: Accumulator.Stats.Stat
+    },
+    inserted_at: ~N[2023-07-28 14:20:37],
+    updated_at: ~N[2024-03-12 02:15:48],
+    views: 276,
+    likes: 0,
+    slug: "blog:typescript-npm-publish"
+  }
+]
+```
+
+```elixir
+blogs_data = Enum.map(result, fn map -> %{likes: map.likes, views: map.views, slug: map.slug} end)
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+[
+  %{views: 16, likes: 0, slug: "blog:things-i-want-to-explore"},
+  %{views: 25, likes: 1, slug: "blog:elixir-s3-list"},
+  %{views: 106, likes: 3, slug: "blog:flyio-phoenix-redis-connection"},
+  %{views: 14, likes: 0, slug: "blog:distro-hop"},
+  %{views: 38, likes: 3, slug: "blog:sonicpi-pop-os-installation"},
+  %{views: 32, likes: 0, slug: "blog:conditional-back-nextjs"},
+  %{views: 21, likes: 0, slug: "blog:prisma-graphql-jest-test"},
+  %{views: 39, likes: 2, slug: "blog:gh-action-pr"},
+  %{views: 12, likes: 0, slug: "blog:mongosh-docker"},
+  %{views: 189, likes: 5, slug: "blog:vscode-tips-tricks"},
+  %{views: 15, likes: 0, slug: "blog:flask-response-headers"},
+  %{views: 190, likes: 2, slug: "blog:flyio-phoenix-file-serve"},
+  %{views: 149, likes: 2, slug: "blog:nextjs-phoenix-channels"},
+  %{views: 35, likes: 1, slug: "blog:postgres-docker"},
+  %{views: 11, likes: 0, slug: "blog:my-custom-mdx-components"},
+  %{views: 15, likes: 1, slug: "blog:hello-world"},
+  %{views: 98, likes: 10, slug: "blog:new-tech-2023"},
+  %{views: 5, likes: 0, slug: "blog:visitor-pattern"},
+  %{views: 11, likes: 0, slug: "blog:elixir-file-handling"},
+  %{views: 42, likes: 1, slug: "blog:tech-2022"},
+  %{views: 109, likes: 2, slug: "blog:markdown-next-mdx"},
+  %{views: 78, likes: 9, slug: "blog:notes"},
+  %{views: 13, likes: 0, slug: "blog:the-odin-project"},
+  %{views: 2, likes: 0, slug: "blog:gsoc-asyncapi-2"},
+  %{views: 15, likes: 2, slug: "blog:gsoc"},
+  %{views: 22, likes: 0, slug: "blog:graphql-typescript"},
+  %{views: 104, likes: 0, slug: "blog:livebook-secret-config"},
+  %{views: 12, likes: 0, slug: "blog:nextjs-dynamic-import"},
+  %{views: 46, likes: 5, slug: "blog:auth0-email-template-redirect"},
+  %{views: 4, likes: 0, slug: "blog:memoization-use-memo"},
+  %{views: 12, likes: 1, slug: "blog:gsoc-at-postman-and-asyncapi"},
+  %{views: 13, likes: 0, slug: "blog:gsoc-asyncapi-1"},
+  %{views: 276, likes: 0, slug: "blog:typescript-npm-publish"},
+  %{views: 276, likes: 0, slug: "blog:typescript-npm-publish"}
+]
+```
+
+```elixir
+slug_to_likes = %{
+  slugs: Enum.map(result, &String.replace(&1.slug, "blog:", "")),
+  likes: Enum.map(result, & &1.likes)
+}
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+%{
+  likes: [0, 1, 3, 0, 3, 0, 0, 2, 0, 5, 0, 2, 2, 1, 0, 1, 10, 0, 0, 1, 2, 9, 0, 0, 2, 0, 0, 0, 5, 0,
+   1, 0, 0, 0],
+  slugs: ["things-i-want-to-explore", "elixir-s3-list", "flyio-phoenix-redis-connection",
+   "distro-hop", "sonicpi-pop-os-installation", "conditional-back-nextjs",
+   "prisma-graphql-jest-test", "gh-action-pr", "mongosh-docker", "vscode-tips-tricks",
+   "flask-response-headers", "flyio-phoenix-file-serve", "nextjs-phoenix-channels",
+   "postgres-docker", "my-custom-mdx-components", "hello-world", "new-tech-2023", "visitor-pattern",
+   "elixir-file-handling", "tech-2022", "markdown-next-mdx", "notes", "the-odin-project",
+   "gsoc-asyncapi-2", "gsoc", "graphql-typescript", "livebook-secret-config",
+   "nextjs-dynamic-import", "auth0-email-template-redirect", "memoization-use-memo",
+   "gsoc-at-postman-and-asyncapi", "gsoc-asyncapi-1", "typescript-npm-publish",
+   "typescript-npm-publish"]
+}
+```
+
+<!-- livebook:{"attrs":"eyJjaGFydF90aXRsZSI6IkJsb2cgdG8gTGlrZXMiLCJoZWlnaHQiOjUwMCwibGF5ZXJzIjpbeyJhY3RpdmUiOnRydWUsImNoYXJ0X3R5cGUiOiJiYXIiLCJjb2xvcl9maWVsZCI6bnVsbCwiY29sb3JfZmllbGRfYWdncmVnYXRlIjpudWxsLCJjb2xvcl9maWVsZF9iaW4iOm51bGwsImNvbG9yX2ZpZWxkX3NjYWxlX3NjaGVtZSI6bnVsbCwiY29sb3JfZmllbGRfdHlwZSI6bnVsbCwiZGF0YV92YXJpYWJsZSI6InNsdWdfdG9fbGlrZXMiLCJnZW9kYXRhX2NvbG9yIjoiYmx1ZSIsImxhdGl0dWRlX2ZpZWxkIjpudWxsLCJsb25naXR1ZGVfZmllbGQiOm51bGwsInhfZmllbGQiOiJzbHVncyIsInhfZmllbGRfYWdncmVnYXRlIjpudWxsLCJ4X2ZpZWxkX2JpbiI6bnVsbCwieF9maWVsZF9zY2FsZV90eXBlIjpudWxsLCJ4X2ZpZWxkX3R5cGUiOiJub21pbmFsIiwieV9maWVsZCI6Imxpa2VzIiwieV9maWVsZF9hZ2dyZWdhdGUiOm51bGwsInlfZmllbGRfYmluIjpudWxsLCJ5X2ZpZWxkX3NjYWxlX3R5cGUiOm51bGwsInlfZmllbGRfdHlwZSI6InF1YW50aXRhdGl2ZSJ9XSwidmxfYWxpYXMiOiJFbGl4aXIuVmVnYUxpdGUiLCJ3aWR0aCI6NjAwfQ","chunks":null,"kind":"Elixir.KinoVegaLite.ChartCell","livebook_object":"smart_cell"} -->
+
+```elixir
+VegaLite.new(width: 600, height: 500, title: "Blog to Likes")
+|> VegaLite.data_from_values(slug_to_likes, only: ["slugs", "likes"])
+|> VegaLite.mark(:bar)
+|> VegaLite.encode_field(:x, "slugs", type: :nominal)
+|> VegaLite.encode_field(:y, "likes", type: :quantitative)
+```
+
+<!-- livebook:{"output":true} -->
+
+```vega-lite
+{"$schema":"https://vega.github.io/schema/vega-lite/v5.json","data":{"values":[{"likes":0,"slugs":"things-i-want-to-explore"},{"likes":1,"slugs":"elixir-s3-list"},{"likes":3,"slugs":"flyio-phoenix-redis-connection"},{"likes":0,"slugs":"distro-hop"},{"likes":3,"slugs":"sonicpi-pop-os-installation"},{"likes":0,"slugs":"conditional-back-nextjs"},{"likes":0,"slugs":"prisma-graphql-jest-test"},{"likes":2,"slugs":"gh-action-pr"},{"likes":0,"slugs":"mongosh-docker"},{"likes":5,"slugs":"vscode-tips-tricks"},{"likes":0,"slugs":"flask-response-headers"},{"likes":2,"slugs":"flyio-phoenix-file-serve"},{"likes":2,"slugs":"nextjs-phoenix-channels"},{"likes":1,"slugs":"postgres-docker"},{"likes":0,"slugs":"my-custom-mdx-components"},{"likes":1,"slugs":"hello-world"},{"likes":10,"slugs":"new-tech-2023"},{"likes":0,"slugs":"visitor-pattern"},{"likes":0,"slugs":"elixir-file-handling"},{"likes":1,"slugs":"tech-2022"},{"likes":2,"slugs":"markdown-next-mdx"},{"likes":9,"slugs":"notes"},{"likes":0,"slugs":"the-odin-project"},{"likes":0,"slugs":"gsoc-asyncapi-2"},{"likes":2,"slugs":"gsoc"},{"likes":0,"slugs":"graphql-typescript"},{"likes":0,"slugs":"livebook-secret-config"},{"likes":0,"slugs":"nextjs-dynamic-import"},{"likes":5,"slugs":"auth0-email-template-redirect"},{"likes":0,"slugs":"memoization-use-memo"},{"likes":1,"slugs":"gsoc-at-postman-and-asyncapi"},{"likes":0,"slugs":"gsoc-asyncapi-1"},{"likes":0,"slugs":"typescript-npm-publish"},{"likes":0,"slugs":"typescript-npm-publish"}]},"encoding":{"x":{"field":"slugs","type":"nominal"},"y":{"field":"likes","type":"quantitative"}},"height":500,"mark":"bar","title":"Blog to Likes","width":600}
+```
